@@ -40,7 +40,8 @@ def search_unfold(f,d,model,est,leg_length,leg_last):
     plt.scatter(d[0:leg_last], f[0:leg_last])
     plt.scatter(d[leg_last:target], f[leg_last:target], c="tab:orange")
     plt.scatter(d[0:target], sim, c="tab:green")
-    plt.show()
+    plt.savefig("last_search.png")
+    plt.close()
     force_mean = average_around(f, target)["mean"]
     if force_mean > sim[-1] + 2 * fit.sigma[0]:
         # this is a strange case and probably unlikely
@@ -49,12 +50,16 @@ def search_unfold(f,d,model,est,leg_length,leg_last):
         print(target)
         return False
         #return 1
-    elif force_mean < sim[-1] - 2 * fit.sigma[0]:
-        first = target
+    elif force_mean < sim[-1] - 3 * fit.sigma[0]:
+        first = leg_last
+        last = target 
         for i in reversed(range(leg_last, target)):
-            if average_around(f, i)["mean"] < sim[i] -2 * fit.sigma[0]:
+            if average_around(f, i)["mean"] < sim[i] -3 * fit.sigma[0]:
                 first = i
-        return round((first + target) / 2)
+        for i in range(first, target):
+            if average_around(f, i)["std"] < 3 * fit.sigma[0]:
+                last = i
+        return [first, last]
     else:
         return False
     
@@ -69,7 +74,7 @@ def find_unfold(f, d, model, est):
         if leg_last > len(f):
             found = -2
 
-    if found < 0: # this needs to be proper error handling
+    if type(found) is not list: # this needs to be proper error handling
         print("something went wrong:")
         if found == -1:
             print("something strange")

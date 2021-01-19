@@ -2,12 +2,14 @@ import numpy as np
 import matplotlib.pyplot as plt
 import lumicks.pylake as lk
 from copy import deepcopy
-from util import load_estimates, extract_estimates, average_around
+from util import load_estimates, extract_estimates, average_around, thresholding_algo
 from find_events import run_average, find_turnaround, find_unfold
+from sklearn.cluster import KMeans
+from scipy.stats import gmean
 
-file = lk.File("Data/adk5_curve1.h5")
+file = lk.File("Data/adk5_curve2.h5")
 list(file.fdcurves)
-fd = file.fdcurves["adk5_curve1"]
+fd = file.fdcurves["adk5_curve2"]
 
 ddata = fd.d.data
 fdata = fd.f.data
@@ -24,16 +26,24 @@ composite_model = composite_model_as_function_of_force.invert(interpolate=True,
                                                               independent_max=90) \
                                   + lk.force_offset("dna_handles")
 fit = lk.FdFit(handles_model, composite_model)
+fit_tmp = lk.FdFit(handles_model, composite_model)
+fit_tmp[handles_model].add_data("closed", fdata[0:2000],
+                            ddata[0:2000])
+fit_tmp["dna_handles/Lc"].value = .35
+fit_tmp["dna_handles/Lp"].value = 15
+fit_tmp["dna_handles/St"].value = 300
+fit_tmp["dna_handles/St"].lower_bound = 250
+fit_tmp["dna_handles/f_offset"].upper_bound = 6
+fit_tmp["dna_handles/f_offset"].lower_bound = -6
+estimates = extract_estimates(fit_tmp)
+
+unf = find_unfold(fdata[0:2000], ddata[0:2000], handles_model, estimates)
+print(unf)
 
 model2 = handles_model
-fit[handles_model].add_data("closed", fdata[0:1600],
-                            ddata[0:1600])
-fit["dna_handles/Lc"].value = .35
-fit["dna_handles/Lp"].value = 15
-fit["dna_handles/St"].value = 300
-fit["dna_handles/St"].lower_bound = 250
-fit["dna_handles/f_offset"].upper_bound = 6
-fit["dna_handles/f_offset"].lower_bound = -6
+fit[handles_model].add_data("closed", fdata[0:unf[0]],
+                            ddata[0:unf[0]])
+load_estimates(fit, estimates)
 fit.fit()
 
 estimates = extract_estimates(fit)
@@ -56,8 +66,9 @@ plt.close()
 print(fit)
 
 
-fit[composite_model].add_data("open", fdata[2200:2600],
-                            ddata[2200:2600])
+unf_size = 800
+fit[composite_model].add_data("open", fdata[unf[1]:unf[1] + unf_size],
+                              ddata[unf[1]:unf[1] + unf_size])
 
 fit["protein/Lp"].value = .7
 fit["protein/Lp"].lower_bound = .6
@@ -87,20 +98,51 @@ plt.axvline(x=find_turnaround(ddata,200))
 #plt.show()
 plt.close()
 
-unf = find_unfold(fdata[0:2000], ddata[0:2000], handles_model, estimates)
+stds = []
+for i in range(25, len(ddata) - 25):
+    std = average_around(fdata, i, half_n = 25)["std"]
+    stds.append(std)
 
-print(unf)
 plt.scatter(ddata[0:1600],fdata[0:1600])
-plt.scatter(ddata[1600:2000],fdata[1600:2000],c="tab:red")
-plt.scatter(ddata[2000:2800],fdata[2000:2800],c="tab:orange")
-plt.scatter(ddata[2800:3200],fdata[2800:3200],c="tab:green")
-plt.scatter(ddata[3200:3500],fdata[3200:3500],c="tab:blue")
-plt.axvline(x=ddata[unf])
-plt.scatter(ddata[0:2000],handles_model(ddata[0:2000], fit))
+plt.scatter(ddata[unf[1]:unf[1] + unf_size],fdata[unf[1]:unf[1] + unf_size],
+            c="tab:orange")
+plt.scatter(ddata[unf[1] + unf_size:],fdata[unf[1] + unf_size:],
+            c="tab:green")
+#plt.scatter(ddata[3200:3500],fdata[3200:3500],c="tab:blue")
+plt.scatter(ddata[unf[0]:unf[1]],fdata[unf[0]:unf[1]],c="tab:red")
+plt.axvline(x=ddata[unf[0]])
+plt.axvline(x=ddata[unf[1]])
+plt.axvline(x=ddata[unf[0] + np.argmax(stds)], c="red")
+plt.plot(ddata,handles_model(ddata, fit), c="black")
+plt.plot(ddata,composite_model(ddata, fit), c="black")
+plt.scatter(ddata[25:-25][peaked["signals"] >= 1],
+            fdata[25:-25][peaked["signals"] >= 1], c="tab:purple")
+plt.ylim(bottom=0,top=50)
+plt.xlim(left=0.26,right=0.42)
 plt.savefig("scatter.png")
+#plt.show()
+plt.close()
+
+plt.plot(ddata)
 plt.show()
 
-sim = handles_model(0.2,fit)
-print(sim)
+plt.plot(stds)
+plt.axhline(y=gmean(stds),c="tab:orange")
+plt.axhline(y=np.mean(stds),c="tab:blue")
+plt.axhline(y=np.median(stds),c="tab:green")
+#plt.axhline(y=gmean(stds) + np.std(stds),c="tab:orange")
+plt.axhline(y=np.mean(stds) + np.std(stds),c="tab:blue", alpha=0.5)
+plt.axhline(y=np.mean(stds) - np.std(stds),c="tab:blue", alpha=0.5)
+plt.show()
 
+peaked = thresholding_algo(stds, 500, 3.6, 0)
+plt.plot(peaked["signals"], c="red")
+plt.plot(peaked["avgFilter"], c="tab:blue")
+#plt.show()
+plt.close()
 
+fig, ax1 = plt.subplots()
+ax2 = ax1.twinx()
+ax1.plot(stds)
+ax2.plot(peaked["signals"], c="red")
+plt.show()
