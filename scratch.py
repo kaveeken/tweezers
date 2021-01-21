@@ -91,136 +91,25 @@ fit[composite_model].plot(independent=np.arange(.26, .4, .001))
 plt.ylabel('Force [pN]')
 plt.xlabel('Distance [$\mu$m]')
 plt.savefig("fits.png")
-plt.show()
+#plt.show()
+plt.close()
 
-#fit = lk.FdFit(handles_model, composite_model)
-#fit_tmp = lk.FdFit(handles_model, composite_model)
-#fit_tmp[handles_model].add_data("closed", fdata[0:2000],
-#                            ddata[0:2000])
-#fit_tmp["dna_handles/Lc"].value = .35
-#fit_tmp["dna_handles/Lp"].value = 15
-#fit_tmp["dna_handles/St"].value = 300
-#fit_tmp["dna_handles/St"].lower_bound = 250
-#fit_tmp["dna_handles/f_offset"].upper_bound = 6
-#fit_tmp["dna_handles/f_offset"].lower_bound = -6
-#estimates = extract_estimates(fit_tmp)
-#
-#unf = find_unfold(fdata[0:2000], ddata[0:2000], handles_model, estimates)
-#print(unf)
-#
-#model2 = handles_model
-#fit[handles_model].add_data("closed", fdata[0:unf[0]],
-#                            ddata[0:unf[0]])
-#load_estimates(fit, estimates)
-#fit.fit()
-#
-#estimates = extract_estimates(fit)
-#
-#print(extract_estimates(fit))
-#print("#############################################~")
-#fit2 = lk.FdFit(handles_model, composite_model)
-#fit2[handles_model].add_data("closed", fdata[0:1600],
-#                            ddata[0:1600])
-#print(fit2)
-#load_estimates(fit2, extract_estimates(fit))
-#print(extract_estimates(fit2))
-#
-#plt.figure()
-#fit[handles_model].plot()
-#plt.ylabel('Force [pN]')
-#plt.xlabel('Distance [$\mu$m]')
-##plt.show()
-#plt.close()
-#print(fit)
-#
-#
-#unf_size = 800
-#fit[composite_model].add_data("open", fdata[unf[1]:unf[1] + unf_size],
-#                              ddata[unf[1]:unf[1] + unf_size])
-#
-#fit["protein/Lp"].value = .7
-#fit["protein/Lp"].lower_bound = .6
-#fit["protein/Lp"].upper_bound = 1.0
-#fit["protein/Lp"].fixed = False
-#fit["protein/Lc"].value = .01
-#
-#fit["dna_handles/St"].fixed = True
-#fit["dna_handles/Lp"].fixed = True
-#fit["dna_handles/Lc"].fixed = True
-#fit.fit()
-#
-#print(fit)
-#fit[handles_model].plot()
-#fit[composite_model].plot(independent=np.arange(.26, .4, .001))
-#plt.savefig("fits.png")
-#plt.close()
-#
-#print(fit["dna_handles/Lp"].value, "+-", fit["dna_handles/Lp"].stderr)
-#print(fit["dna_handles/Lc"].value, "+-", fit["dna_handles/Lc"].stderr)
-#print(fit["dna_handles/St"].value, "+-", fit["dna_handles/St"].stderr)
-#
-#plt.plot(ddata)
-#plt.plot(run_average(ddata,100))
-#plt.plot(run_average(ddata,200))
-#plt.axvline(x=find_turnaround(ddata,200))
-##plt.show()
-#plt.close()
-#
-#
-#plt.scatter(ddata[0:1600],fdata[0:1600])
-#plt.scatter(ddata[unf[1]:unf[1] + unf_size],fdata[unf[1]:unf[1] + unf_size],
-#            c="tab:orange")
-#plt.scatter(ddata[unf[1] + unf_size:],fdata[unf[1] + unf_size:],
-#            c="tab:green")
-##plt.scatter(ddata[3200:3500],fdata[3200:3500],c="tab:blue")
-#plt.scatter(ddata[unf[0]:unf[1]],fdata[unf[0]:unf[1]],c="tab:red")
-#plt.axvline(x=ddata[unf[0]])
-#plt.axvline(x=ddata[unf[1]])
-#plt.axvline(x=ddata[unf[0] + np.argmax(stds)], c="red")
-#plt.plot(ddata,handles_model(ddata, fit), c="black")
-#plt.plot(ddata,composite_model(ddata, fit), c="black")
-#plt.scatter(ddata[25:-25][peaked["signals"] >= 1],
-#            fdata[25:-25][peaked["signals"] >= 1], c="tab:purple")
-#plt.ylim(bottom=0,top=50)
-#plt.xlim(left=0.26,right=0.42)
-#plt.savefig("scatter.png")
-##plt.show()
-#plt.close()
-#
+#print(fit.log_likelihood())
+
+stds = [average_around(force_datas[0], i, half_n = 25)["std"] \
+        for i in range(25, len(force_datas[0]) - 25)]
+peaks = thresholding_algo(stds, 500, 4., 0)
+fig, ax1 = plt.subplots()
+ax2 = ax1.twinx()
+ax3 = ax1.twinx()
+ax1.plot(force_datas[0][25:-25], label="force")
+fig.legend()
+plt.savefig("force.png")
+ax2.plot(stds, c="tab:orange", label="stdev(force) over period 50")
+fig.legend()
+plt.savefig("force+sd.png")
+ax3.plot(peaks["signals"], c="tab:red", label="peak signal")
+fig.legend()
+plt.savefig("force+sd+signal.png")
 #plt.show()
-#
-#plt.plot(stds)
-#plt.axhline(y=gmean(stds),c="tab:orange")
-#plt.axhline(y=np.mean(stds),c="tab:blue")
-#plt.axhline(y=np.median(stds),c="tab:green")
-##plt.axhline(y=gmean(stds) + np.std(stds),c="tab:orange")
-#plt.axhline(y=np.mean(stds) + np.std(stds),c="tab:blue", alpha=0.5)
-#plt.axhline(y=np.mean(stds) - np.std(stds),c="tab:blue", alpha=0.5)
-#plt.close()
-#
-#plt.plot(peaked["signals"], c="red")
-#plt.plot(peaked["avgFilter"], c="tab:blue")
-##plt.show()
-#plt.close()
-#
-#fig, ax1 = plt.subplots()
-#ax2 = ax1.twinx()
-#ax3 = ax1.twinx()
-#ax1.plot(fdata[25:-25], label="force")
-#fig.legend()
-#plt.savefig("dist.png")
-#ax2.plot(stds, c="tab:orange", label="stdev(force) over period 50")
-#fig.legend()
-#plt.savefig("dist+sd.png")
-#ax3.plot(peaked["signals"], c="tab:red", alpha=0.9,label="peak signal")
-#fig.legend()
-#plt.savefig("dist+sd+signal.png")
-#plt.close()
-#
-#
-#print(np.mean(fdata[25:-25][peaked["signals"] >= 1]))
-#print(np.std(fdata[25:-25][peaked["signals"] >= 1]))
-#print(max(fdata[25:-25][peaked["signals"] >= 1]))
-#
-#plt.plot(fdata[25:-25][peaked["signals"] >= 1])
-#plt.show()
+plt.close()
