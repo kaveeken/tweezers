@@ -5,6 +5,7 @@ from copy import deepcopy
 from util import load_estimates, extract_estimates, average_around, \
     thresholding_algo
 from find_events import run_average, find_turnaround, find_unfold
+from build_model import build_model
 from sklearn.cluster import KMeans
 from scipy.stats import gmean
 
@@ -47,8 +48,9 @@ force_datas = [fd.f.data[fd.d.data > 0] for fd in fds]
 peak_indices = [get_peak_indices(f) for f in force_datas]
 trough_indices = [get_trough_indices_backwards(f) for f in force_datas]
 
-handles_model = lk.inverted_odijk("dna_handles") \
-    + lk.force_offset("dna_handles")
+handles_model = build_model("dna_handles", ["inv_odijk", "force_offset"])
+# handles_model = lk.inverted_odijk("dna_handles") \
+    # + lk.force_offset("dna_handles")
 composite_model_as_func_of_force = lk.odijk("dna_handles") \
     + lk.inverted_marko_siggia_simplified("protein")
 composite_model = composite_model_as_func_of_force.invert(interpolate=True,
@@ -97,7 +99,7 @@ fit[composite_model].plot(independent=np.arange(.26, .4, .001))
 plt.ylabel('Force [pN]')
 plt.xlabel('Distance [$\mu$m]')
 plt.savefig("fits.png")
-# plt.show()
+plt.show()
 plt.close()
 
 # print(fit.log_likelihood())
