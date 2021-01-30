@@ -30,7 +30,7 @@ def build_term(term):
     modeldict = {"odijk": lk.odijk,
                  "inv_odijk": lk.inverted_odijk,
                  "marko_siggia_simple": lk.marko_siggia_simplified,
-                 "inv_marko_siggia_simple": lk.marko_siggia_simplified,
+                 "inv_marko_siggia_simple": lk.inverted_marko_siggia_simplified,
                  "marko_siggia_dist": lk.marko_siggia_ewlc_distance,
                  "marko_siggia_force": lk.marko_siggia_ewlc_force,
                  "twistable_wlc": lk.twistable_wlc,
