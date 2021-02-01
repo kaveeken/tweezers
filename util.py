@@ -28,9 +28,10 @@ def average_around(data, index, half_n=10):
 
 
 def thresholding_algo(y, lag, threshold, influence):
-    """Implementation of algorithm from
-    https://stackoverflow.com/a/22640362/6029703
-    requires a citation
+    """Implementation of the noise-resistant peak-finding algorithm cited below.
+
+    Reference:
+    Brakel, J.P.G. van (2014). "Robust peak detection algorithm using z-scores". Stack Overflow. Available at: https://stackoverflow.com/questions/22583391/peak-signal-detection-in-realtime-timeseries-data/22640362#22640362 (version: 2020-11-08).
     """
     signals = np.zeros(len(y))
     filteredY = np.array(y)
