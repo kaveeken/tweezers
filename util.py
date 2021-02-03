@@ -1,14 +1,17 @@
 import numpy as np
-import matplotlib.pyplot as plt
-import lumicks.pylake as lk
 
 
 def load_estimates(fit, est):
-    for key in est:
-        fit[key].value = est[key]["value"]
-        fit[key].upper_bound = est[key]["upper_bound"]
-        fit[key].lower_bound = est[key]["lower_bound"]
-        fit[key].fixed = est[key]["fixed"]
+    for param_key, param in est.items():
+        for field_key in param.keys():
+            if field_key == 'value':
+                fit[param_key].value = param["value"]
+            elif field_key == 'upper_bound':
+                fit[param_key].upper_bound = param["upper_bound"]
+            elif field_key == 'lower_bound':
+                fit[param_key].lower_bound = param["lower_bound"]
+            elif field_key == 'fixed':
+                fit[param_key].fixed = param["fixed"]
 
 
 def extract_estimates(fit):
