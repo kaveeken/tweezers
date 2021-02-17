@@ -4,6 +4,10 @@ from matplotlib import pyplot as plt
 
 
 def get_first_trough_index(f, last=False, debug=False):
+    """ Tries to find stationary/return point of trace including pulling and 
+    relaxation. Looks at standard deviation of a running mean and signals at
+    abrupt drops.
+    """
     stds = []
     for i in range(25, len(f) - 25):
         std = average_around(f, i, half_n=25)["std"]
@@ -25,6 +29,10 @@ def get_first_trough_index(f, last=False, debug=False):
 
 
 def find_transitions(y: np.ndarray, noise_estimation_window: tuple = None):
+    """ Tries to find unfolding events by looking for negative outliers in
+    force change that exceed by a factor of background noise.
+    Thanks goes out to Christopher Battle for providing the original code.
+    """
     EPS = 1e-4  # SNR stabilization factor
 
     # Magic numbers
@@ -60,25 +68,29 @@ def find_transitions(y: np.ndarray, noise_estimation_window: tuple = None):
     return where, outlier_threshold
 
 
-def plot_events(fdcurves):  # turn this into a function and hide it
+def plot_events(fdcurves):
+    """ Constructs a plot for each member of fdcurves which highlights events of
+    interest and targets for fitting.
+    """
     plt.figure(figsize=(8, 24))
     i = 1
     for key, val in fdcurves.items():
-        curve = val['curve']
+        fdata = val['force_data']
         unfolds = list(val['unfolds'])
         unfolds.insert(0, 0)
+        legs = val['legs']
         top = val['top']
         plt.subplot(len(fdcurves), 1, i)
+        plt.plot(np.arange(len(fdata)), fdata, c='tab:blue')
         for j in range(1, len(unfolds)):
-            plt.plot(np.arange(unfolds[j-1]+5, unfolds[j]),
-                     curve.f.data[unfolds[j-1]+5:unfolds[j]])
+            #plt.plot(np.arange(unfolds[j-1]+5, unfolds[j]),
+                     #fdata[unfolds[j-1]+5:unfolds[j]])
             plt.plot(np.arange(unfolds[j], unfolds[j]+5),
-                     curve.f.data[unfolds[j]:unfolds[j]+5])
+                     fdata[unfolds[j]:unfolds[j]+5], c='tab:orange')
 
-        plt.plot(np.arange(unfolds[-1]+5, top[0]),
-                 curve.f.data[unfolds[-1]+5: top[0]])
-        plt.plot(np.arange(top[0], top[1]), curve.f.data[top[0]:top[1]])
-        plt.plot(np.arange(top[1], len(curve.f.data)),
-                 curve.f.data[top[1]:], c='tab:blue')
+        for leg in legs:
+            plt.plot(np.arange(len(fdata))[leg],
+                     fdata[leg], c='tab:green')
+        plt.plot(np.arange(top[0], top[1]), fdata[top[0]:top[1]], c='tab:red')
 
         i += 1
