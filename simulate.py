@@ -2,19 +2,6 @@ import numpy as np
 import lumicks.pylake as lk
 from matplotlib import pyplot as plt
 
-d = lk.File('Data/adk5_curve1.h5')
-curve = d.fdcurves['adk5_curve1']
-ddata = curve.d.data
-fdata = curve.f.data[ddata > 0]
-ddata = ddata[ddata > 0]
-legs = [slice(10, 1661, None), slice(1681, 1721, None), slice(2055, 2455, None)]
-
-# noise windows
-stationary = slice(1750, 1900, None)
-dist_std = np.std(ddata[stationary])
-force_std = np.std(fdata[stationary])
-print(dist_std, force_std)
-
 def gen_hm():
     return lk.inverted_odijk('handles') + lk.force_offset('handles')
 def gen_comp():
@@ -44,16 +31,16 @@ def generate_fd(first_unf, cls, stds={'dist': 0.00195, 'force': 0.105}):
     fit['protein/Lp'].fixed = True
 
     unfold_dist = first_unf
-    stop_dist = 0.4 + sum(cls)
+    stop_dist = unfold_dist + sum(cls)
     pull_dists = np.linspace(0.28, stop_dist, 2000)
     distances = [pull_dists[pull_dists < unfold_dist]]
     forces = [model_h(distances[0], fit)]
     total_cl = 0
     for index, cl in enumerate(cls):
         newdist = pull_dists[pull_dists >= unfold_dist]
-        print(len(newdist))
+        # print(len(newdist))
         unfold_dist += cl
-        print(index, cl, len(cls))
+        # print(index, cl, len(cls))
         if index < len(cls) - 1:
             newdist = newdist[newdist < unfold_dist]
         distances.append(newdist)
@@ -76,11 +63,11 @@ def generate_fd(first_unf, cls, stds={'dist': 0.00195, 'force': 0.105}):
     return (noisy_dists, noisy_forces)
 
 
-gens = generate_fd(0.38, [0.020, 0.010, 0.035])
+gens = generate_fd(0.38, [0.020, 0.025, 0.035])
 
-plt.figure(figsize=(8,14))
-plt.subplot(2, 1, 1)
-plt.plot(*gens, '.', c='tab:blue')
-plt.subplot(2, 1, 2)
-plt.plot(gens[1], '.', c='tab:blue')
-plt.savefig('sim_test.png')
+# plt.figure(figsize=(8,14))
+# plt.subplot(2, 1, 1)
+# plt.plot(*gens, '.', c='tab:blue')
+# plt.subplot(2, 1, 2)
+# plt.plot(gens[1], '.', c='tab:blue')
+# plt.savefig('sim_test.png')
