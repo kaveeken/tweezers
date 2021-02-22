@@ -2,7 +2,7 @@
 
 This project is aimed to take large amounts of data from optical tweezer unfolding experiments,
 and to perform as much automated analysis as is feasible.
-The code is built on lumicks pylake and assumes data is obtained from lumicks optical tweezer instruments,
+The code is built on [lumicks pylake](https://github.com/lumicks/pylake) and assumes data is obtained from lumicks optical tweezer instruments,
 but other sources can be used as well. The code is split up in a Curve class with supporting functions
 and a notebook, which uses Curve objects to perform analysis.
 
