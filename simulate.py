@@ -1,6 +1,9 @@
 import numpy as np
 import lumicks.pylake as lk
 from matplotlib import pyplot as plt
+from copy import deepcopy
+
+from util import load_estimates
 
 def gen_hm():
     return lk.inverted_odijk('handles') + lk.force_offset('handles')
@@ -10,25 +13,24 @@ def gen_comp():
                              independent_min = 0,
                             independent_max = 90) + lk.force_offset('handles')
 
-def generate_fd(first_unf, cls, stds={'dist': 0.00195, 'force': 0.105}):
+def generate_fd(first_unf, cls, handle_estimates_orig, protein_estimates_orig,
+                stds={'dist': 0.00195, 'force': 0.105}):
     model_h = gen_hm()
     model_c = gen_comp()
     fit = lk.FdFit(model_h, model_c)
     junk = (np.linspace(0.28,0.3,100), np.linspace(0,20,100))
     fit[model_h].add_data('junk', *junk)
     fit[model_c].add_data('junk', *junk)
-    fit['handles/Lp'].value = 15
-    fit['handles/Lp'].fixed = True
-    fit['handles/Lc'].value = 0.35
-    fit['handles/Lc'].fixed = True
-    fit['handles/St'].value = 250
-    fit['handles/St'].fixed = True
-    fit['handles/f_offset'].value = 0
-    fit['handles/f_offset'].fixed = True
-    fit['protein/Lp'].value = 0.7
-    fit['protein/Lp'].fixed = True
-    fit['protein/Lc'].value = cls[0] 
-    fit['protein/Lp'].fixed = True
+
+    handle_estimates = deepcopy(handle_estimates_orig)
+    protein_estimates = deepcopy(protein_estimates_orig)
+    for param in handle_estimates.values():
+        param['fixed'] = True
+    for param in protein_estimates.values():
+        param['fixed'] = True
+    load_estimates(fit, handle_estimates)
+    load_estimates(fit, protein_estimates)
+    fit['protein/Lc'].value = cls[0]
 
     unfold_dist = first_unf
     stop_dist = unfold_dist + sum(cls)
@@ -63,7 +65,7 @@ def generate_fd(first_unf, cls, stds={'dist': 0.00195, 'force': 0.105}):
     return (noisy_dists, noisy_forces)
 
 
-gens = generate_fd(0.38, [0.020, 0.025, 0.035])
+#gens = generate_fd(0.38, [0.020, 0.025, 0.035])
 
 # plt.figure(figsize=(8,14))
 # plt.subplot(2, 1, 1)
