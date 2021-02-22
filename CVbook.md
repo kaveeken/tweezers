@@ -190,8 +190,6 @@ for curve in fdcurves.values():
 ```
 
 ## Error-finding
-
-
 ##### Multiple tethers
 We filter multiple tethers comparison of the model as given in the estimates, with exaggerated parameters or data. The tests we perform include:
 - A doubled persistence length
@@ -221,6 +219,7 @@ test_estimates = {'original': original, 'double_Lp': double_Lp,
                   'double_dist': original}
 
 for curve in fdcurves.values():
+    print(curve.identifier)
     curve.filter_tethers(build_handles_model(), test_estimates)
 ```
 
