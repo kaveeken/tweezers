@@ -12,6 +12,8 @@ class Curve:
     Many methods rely on internal state change and can only be ran sequentially.
     """
     def __init__(self, identifier: str, ddata: np.ndarray, fdata: np.ndarray):
+        """ Take the identifier, distance data and force data for an fd curve.
+        """
         self.identifier = identifier
         self.dist_data = ddata
         self.force_data = fdata
@@ -133,8 +135,6 @@ class Curve:
             print(self.identifier, '\n', self.tether_tests)
 
 
-    #def filter_loss(self, VERBOSE = True):
-        
 
     def initialize_fits(self, handles_model: lk.fitting.model.Model,
                         composite_model: lk.fitting.model.Model,
@@ -144,8 +144,8 @@ class Curve:
         are copied onto all fit objects and fixed.
         
         Arguments
-        - handles_model: lumicks model object describing the DNA handles.
-        - composite_model: lumicks model object describing handles + protein.
+        - handles_model: pylake model object describing the DNA handles.
+        - composite_model: pylake model object describing handles + protein.
         - handle_estimates: initial estimates given for the DNA handles model.
         """
         self.composite_model = composite_model
@@ -214,9 +214,39 @@ class Curve:
     def compute_unfold_forces(self, handles_model: lk.fitting.model.Model,
                               composite_model: lk.fitting.model.Model,
                               VERBOSE = True):
+        """ Computes unfolding forces by simulating the preceding model directly
+        before the unfolding event.
+
+        Arguments:
+        - handles_model: pylake model object for DNA handles
+        - composite_model: pylake model object for handles + protein
+        - VERBOSE: option to immediately print out a list of unfolding forces
+        """
         unfold_dists = [self.dist_data[unfold - 1] for unfold in self.unfolds]
         self.unfold_forces = [handles_model(unfold_dists[0], self.fits[0])]
         for dist, fit in zip(unfold_dists[1:], self.fits[:-1]):
             self.unfold_forces.append(composite_model(dist, fit))
         if VERBOSE:
             print(self.identifier, '\n', self.unfold_forces)
+
+
+    def print_result_rows(self, row_format: str):
+        """ Print a row containing contour length, persistence length and 
+        unfolding force for each unfolded domain. Formatted according to
+        the row_format argument.
+        
+        Arguments:
+        - row_format: python formatting string
+        """
+        total_cl = 0
+        for index, fit in enumerate(self.fits):
+            Lc = round(fit['protein/Lc'].value - total_cl, 6)
+            Lp = round(fit['protein/Lp'].value, 6)
+            Fu = round(self.unfold_forces[index], 4)
+            tests = self.tether_tests
+            failed_tests = \
+                [test for test in tests if tests[test]]
+            total_cl += Lc
+            print(row_format.format(self.identifier, index + 1, Lc, Lp, Fu,
+                                    failed_tests))
+
