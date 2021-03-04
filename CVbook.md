@@ -23,8 +23,8 @@ In this notebook we take a large number of constant velocity traces and inspect 
 After which we determine the contour lengths of unfolded domains as well as their unfolding forces, by fitting each curve with Odijk and Marko-Siggia models (for DNA handles and unfolded protein respectively).
 
 This is very much a work in progress and there are some things to keep in mind (also a todo/fix list):
-- For now, fdcurves have to inlcude both the pulling and relaxation parts, even if we only care about the pull.
-- The error-finding capabilities are not yet proben to be effective.
+- For now, fdcurves have to include both the pulling and relaxation parts, even if we only care about the pull.
+- The error-finding capabilities are not yet proven to be effective.
 - There is no error-handling and limited sanity-checking: the notebook can fail silently and in unexpected ways.
 
 ```python
@@ -99,13 +99,16 @@ We can use the ```PRUNE_ZEROS``` option below if we suspect datapoints with a di
 
 From here the notebook should be able to run without user input.
 
-```python
+
 # should add the option to include all fdcurves found in a file
 datasets = [{'filename': 'Data/adk5_curve1.h5', 'curve_ids': ['adk5_curve1']},
             {'filename': 'Data/adk5_curve2.h5', 'curve_ids': ['adk5_curve2']},
             {'filename': 'Data/adk5_curve3.h5', 'curve_ids': ['adk5_curve3']}]
 PRUNE_ZEROS = True
 PREPEND_FILENAME = False
+
+```python
+datasets = [{'filename': '20210302-190729 Marker 4_TrmD.h5'}]
 ```
 
 ```python
@@ -178,8 +181,10 @@ Further (optional) arguments for the ```find_events``` function are:
 
 ```SHOW_PLOTS``` determines whether to show plots highlighting the different events and legs for each curve.
 
+
 ```python
 SHOW_PLOTS = True
+%matplotlib inline
 
 for curve in fdcurves.values():
     curve.find_events()
@@ -187,6 +192,7 @@ for curve in fdcurves.values():
         curve.plot_events()
 # plot force over time (or number of measurements)
 # green: fitted leg, orange: unfold event, red: return/stationary point
+
 ```
 
 ## Error-finding
@@ -240,6 +246,7 @@ for curve_id, curve in fdcurves.items():
 ```
 
 ```python
+%matplotlib inline
 for curve in fdcurves.values():
     curve.plot_fits()
     plt.show()
@@ -262,12 +269,14 @@ Prints a summary table containing fitted contour length, persistence length and 
 largest_id_len = max([len(id) for id in fdcurves.keys()])
 row_format = f'{{:<{largest_id_len + 1}}}| {{:<5}}| {{:<9}}| {{:<9}}| {{:<9}}| {{}}'
 
-print(row_format.format('Curve', 'fold', 'Lc (um)', 'Lp (nm)', 'Fu (pN)', 'failed tests'))
+print(row_format.format('Curve', 'fold', 'Lc (um)', 'Lp (nm)', 'Fu (pN)',
+                        'failed tests'))
 for curve_id, curve in fdcurves.items():
     curve.print_result_rows(row_format)
 
 if lost_bead_fdcurves:
-    print('\nBead losses for curves', [curve_id for curve_id in lost_bead_fdcurves.keys()])
+    print('\nBead losses for curves', [curve_id for curve_id in
+                                       lost_bead_fdcurves.keys()])
 ```
 
 ```python

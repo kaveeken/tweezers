@@ -1,11 +1,11 @@
 import lumicks.pylake as lk
 import numpy as np
-from copy import deepcopy
 from math import exp
 from matplotlib import pyplot as plt
 
-from event_finding import get_first_trough_index, find_transitions, plot_events
+from event_finding import get_first_trough_index, find_transitions
 from util import extract_estimates, load_estimates
+
 
 class Curve:
     """ This class holds the data of an FD curve and methods used for analysis.
@@ -18,7 +18,6 @@ class Curve:
         self.dist_data = ddata
         self.force_data = fdata
 
-    
     def filter_bead_loss(self):
         """ Test for a sudden drop in force to 0. Implementation is somewhat
         arbitrary. Returns True if a sudden drop is detected and False
@@ -29,15 +28,14 @@ class Curve:
                 return True
         return False
 
-
     def find_events(self, STARTING_FORCE: float = 0, CORDON: int = 10,
                     FIT_ON_RETURN: tuple = (), DEBUG: bool = False):
         """ Identifies relevant events in the force data over time. From those
         events determines which parts (legs) of the data to mark for fitting.
-        
-        Arguments:
-        - STARTING_FORCE: we do not mark for fitting data before the point where
-        STARTING_FORCE is reached.
+
+        # Arguments:
+        - STARTING_FORCE: we do not mark for fitting data before the point
+        where STARTING_FORCE is reached.
         - CORDON: we exclude from fitting datapoints within CORDON points
         before and after an event.
         - FIT_ON_RETURN: tuple describing an arbitrary part of the
@@ -62,17 +60,16 @@ class Curve:
         self.start = 0
         for index, force in enumerate(self.force_data):
             if force > STARTING_FORCE:
-                start = index
+                self.start = index
                 break
 
         events = [self.start, *self.unfolds, self.top[0]]
-        self.legs = [slice(*[events[i] + CORDON, events[i+1] - CORDON])\
+        self.legs = [slice(*[events[i] + CORDON, events[i+1] - CORDON])
                      for i in range(len(events) - 1)]
 
         if FIT_ON_RETURN:
-            self.legs.append(slice(top_window[-1] + FIT_ON_RETURN[0],
-                                   top_window[-1] + sum(FIT_ON_RETURN)))
-
+            self.legs.append(slice(self.top_window[-1] + FIT_ON_RETURN[0],
+                                   self.top_window[-1] + sum(FIT_ON_RETURN)))
 
     def plot_events(self):
         fig = plt.figure()
@@ -85,20 +82,19 @@ class Curve:
             plt.plot(np.arange(N)[leg],  # np.arange(leg) ?
                      self.force_data[leg],
                      c='tab:green')
-        plt.plot(np.arange(self.top[0],self.top[1]),
+        plt.plot(np.arange(self.top[0], self.top[1]),
                  self.force_data[self.top[0]:self.top[1]], c='tab:red')
         return fig
 
-    
-    def filter_tethers(self, model: lk.fitting.model.Model, estimates_dict: dict,
-                       VERBOSE: bool = True):
+    def filter_tethers(self, model: lk.fitting.model.Model,
+                       estimates_dict: dict, VERBOSE: bool = True):
         """ Tests for multiple tethers by comparing the fit of the raw estimates
         to changes made in those estimates that are meant to better describe
         the case of two tethers.
         Similarly tries to redescribe the system to better fit the two-tether
         case by halving force data and doubling distance data.
-        
-        Arguments:
+
+        # Arguments:
         - model: Pylake model object.
         - estimates_dict: dictionary with the raw estimates as well as changed
         estimates for east test. Raw estimates have to be named 'original'.
@@ -107,7 +103,7 @@ class Curve:
         fits = {test_id: lk.FdFit(model) for test_id in estimates_dict.keys()}
         handle_forces = self.force_data[self.legs[0]]
         handle_dists = self.dist_data[self.legs[0]]
-        
+
         self.bics = {}
         for key, fit in fits.items():
             if key == 'half_force':
@@ -125,16 +121,14 @@ class Curve:
             self.bics[key] = fit.bic
 
         self.bfactors = \
-            {test_id: exp((self.bics['original'] - self.bics[test_id]) / 2) \
+            {test_id: exp((self.bics['original'] - self.bics[test_id]) / 2)
              for test_id in self.bics.keys() - 'original'}
         self.tether_tests = \
-            {test_id: self.bics['original'] > self.bics[test_id] \
+            {test_id: self.bics['original'] > self.bics[test_id]
              for test_id in self.bics.keys() - 'original'}
 
         if VERBOSE:
             print(self.identifier, '\n', self.tether_tests)
-
-
 
     def initialize_fits(self, handles_model: lk.fitting.model.Model,
                         composite_model: lk.fitting.model.Model,
@@ -142,8 +136,8 @@ class Curve:
         """ initialize a lk.FdFit object for each unfolding event and perform
         a fit for the DNA handles part of the system. The results of that fit
         are copied onto all fit objects and fixed.
-        
-        Arguments
+
+        # Arguments
         - handles_model: pylake model object describing the DNA handles.
         - composite_model: pylake model object describing handles + protein.
         - handle_estimates: initial estimates given for the DNA handles model.
@@ -167,8 +161,8 @@ class Curve:
 
     def fit_composites(self, protein_estimates: dict):
         """ Perform a fit for each remaining leg using the composite model.
-        
-        Arguments:
+
+        # Arguments:
         - protein_estimates: initial estimates given for the composite model.
         """
         # this first part seems sketchy
@@ -196,11 +190,9 @@ class Curve:
 
             fit.fit()
 
-
     def print_fit_params(self):
         for fit in self.fits:
             print(fit.params)
-            
 
     def plot_fits(self):
         fig = plt.figure()
@@ -210,14 +202,13 @@ class Curve:
             fit[self.composite_model].plot()
         return fig
 
-
     def compute_unfold_forces(self, handles_model: lk.fitting.model.Model,
                               composite_model: lk.fitting.model.Model,
-                              VERBOSE = True):
+                              VERBOSE=True):
         """ Computes unfolding forces by simulating the preceding model directly
         before the unfolding event.
 
-        Arguments:
+        # Arguments:
         - handles_model: pylake model object for DNA handles
         - composite_model: pylake model object for handles + protein
         - VERBOSE: option to immediately print out a list of unfolding forces
@@ -229,13 +220,12 @@ class Curve:
         if VERBOSE:
             print(self.identifier, '\n', self.unfold_forces)
 
-
     def print_result_rows(self, row_format: str):
-        """ Print a row containing contour length, persistence length and 
+        """ Print a row containing contour length, persistence length and
         unfolding force for each unfolded domain. Formatted according to
         the row_format argument.
-        
-        Arguments:
+
+        # Arguments:
         - row_format: python formatting string
         """
         total_cl = 0
@@ -249,4 +239,3 @@ class Curve:
             total_cl += Lc
             print(row_format.format(self.identifier, index + 1, Lc, Lp, Fu,
                                     failed_tests))
-
